@@ -21,14 +21,7 @@ else:
 torch.backends.cudnn.deterministic = True
 
 
-AMP_CUSTOM_FWD_F32 = (
-    torch.amp.custom_fwd(cast_inputs=torch.float32, device_type="cuda")
-    if hasattr(torch, "amp") and hasattr(torch.amp, "custom_fwd")
-    else torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
-)
-
-
-@AMP_CUSTOM_FWD_F32
+@torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
 def normalize_keypoints(
     kpts: torch.Tensor, size: Optional[torch.Tensor] = None
 ) -> torch.Tensor:

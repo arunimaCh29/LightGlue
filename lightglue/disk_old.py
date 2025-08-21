@@ -1,6 +1,5 @@
 import kornia
 import torch
-from torch.nn.utils.rnn import pad_sequence
 
 from .utils import Extractor
 
@@ -45,31 +44,12 @@ class DISK(Extractor):
         descriptors = [f.descriptors for f in features]
         del features
 
-        lengths = [k.size(0) for k in keypoints]
-        keypoints = pad_sequence(keypoints, batch_first=True, padding_value=0.0)
-        descriptors = pad_sequence(descriptors, batch_first=True, padding_value=0.0)
-        scores = pad_sequence([s.view(-1).to(dtype=torch.float32) for s in scores],
-                              batch_first=True, padding_value=float('-inf'))
-
-        
-        B, Nmax = keypoints.size(0), keypoints.size(1)
-        device = keypoints.device
-        valid_mask = (torch.arange(Nmax, device=device).unsqueeze(0).expand(B, Nmax) <
-              torch.tensor(lengths, device=device).unsqueeze(1))
+        keypoints = torch.stack(keypoints, 0)
+        scores = torch.stack(scores, 0)
+        descriptors = torch.stack(descriptors, 0)
 
         return {
             "keypoints": keypoints.to(image).contiguous(),
-            "keypoint_scores": scores.to(image).contiguous(),   # padded with -inf
-            "descriptors": descriptors.to(image).contiguous(),
-            "keypoints_mask": valid_mask.to(image)
-        }
-
-        #keypoints = torch.stack(keypoints, 0)
-        #scores = torch.stack(scores, 0)
-        #descriptors = torch.stack(descriptors, 0)
-
-        '''return {
-            "keypoints": keypoints.to(image).contiguous(),
             "keypoint_scores": scores.to(image).contiguous(),
             "descriptors": descriptors.to(image).contiguous(),
-        }'''
+        }
